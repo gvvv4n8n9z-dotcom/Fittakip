@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FitTakip - Spor & Beslenme Rehberin</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        accent: {
+                            protein: '#ef4444', // Kırmızı/Pembe
+                            carb: '#3b82f6',    // Mavi
+                            fat: '#eab308',     // Sarı
+                            cal: '#10b981'      // Yeşil
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icon CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-full flex flex-col justify-between max-w-md mx-auto relative shadow-2xl border-x border-gray-800">
+
+    <!-- Header Header Section -->
+    <header class="p-4 bg-gray-900/80 backdrop-blur-md sticky top-0 z-20 border-b border-gray-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-400 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                <i class="fa-solid font-black fa-bolt"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-tight text-white">FitTakip</h1>
+                <p class="text-xs text-gray-400" id="current-date">Yükleniyor...</p>
+            </div>
+        </div>
+        <button id="btn-open-settings" class="p-2 text-gray-400 hover:text-white rounded-lg bg-gray-800/60 active:scale-95 transition-all">
+            <i class="fa-solid fa-sliders text-lg"></i>
+        </button>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 p-4 pb-24 overflow-y-auto space-y-6">
+
+        <!-- TAB 1: BESLENME / MAKRO TAKİBİ -->
+        <section id="tab-nutrition" class="space-y-6">
+            
+            <!-- Özet Kartı ve İlerleme Halkası -->
+            <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-bold text-gray-200 text-sm tracking-wide uppercase">Günlük Kalori Dengesi</h2>
+                    <span id="cal-status" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Hedefte</span>
+                </div>
+
+                <div class="flex items-center justify-between gap-4">
+                    <!-- Dairesel Grafik -->
+                    <div class="relative w-28 h-28 flex items-center justify-center shrink-0">
+                        <svg class="w-full h-full" viewBox="0 0 100 100">
+                            <circle class="text-gray-800" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"/>
+                            <circle id="calorie-progress-circle" class="text-emerald-500 progress-ring__circle" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"/>
+                        </svg>
+                        <div class="absolute flex flex-col items-center justify-center text-center">
+                            <span id="cal-remaining" class="text-xl font-extrabold text-white">0</span>
+                            <span class="text-[10px] text-gray-400 uppercase font-medium">Kalan kcal</span>
+                        </div>
+                    </div>
+
+                    <!-- İstatistik Detay -->
+                    <div class="flex-1 space-y-2 text-sm">
+                        <div class="flex justify-between items-center bg-gray-950/50 p-2.5 rounded-xl border border-gray-800/60">
+                            <span class="text-gray-400 text-xs">Alınan:</span>
+                            <span id="cal-consumed" class="font-bold text-white">0 kcal</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-gray-950/50 p-2.5 rounded-xl border border-gray-800/60">
+                            <span class="text-gray-400 text-xs">Hedef:</span>
+                            <span id="cal-target" class="font-bold text-gray-300">2000 kcal</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Makro Çubukları (Protein, Karb, Yağ) -->
+                <div class="mt-6 grid grid-cols-3 gap-3">
+                    <!-- Protein -->
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-red-400">Protein</span>
+                            <i class="fa-solid fa-drumstick-bite text-red-400/40 text-xs"></i>
+                        </div>
+                        <div class="text-sm font-bold text-white mb-1">
+                            <span id="prot-current">0</span>/<span id="prot-target" class="text-xs font-normal text-gray-400">140g</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="prot-bar" class="bg-red-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Karbonhidrat -->
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-blue-400">Karb</span>
+                            <i class="fa-solid fa-bowl-rice text-blue-400/40 text-xs"></i>
+                        </div>
+                        <div class="text-sm font-bold text-white mb-1">
+                            <span id="carb-current">0</span>/<span id="carb-target" class="text-xs font-normal text-gray-400">220g</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="carb-bar" class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Yağ -->
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-yellow-400">Yağ</span>
+                            <i class="fa-solid fa-cheese text-yellow-400/40 text-xs"></i>
+                        </div>
+                        <div class="text-sm font-bold text-white mb-1">
+                            <span id="fat-current">0</span>/<span id="fat-target" class="text-xs font-normal text-gray-400">65g</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="fat-bar" class="bg-yellow-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yemek Ekleme Butonu ve Öğün Listesi -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="font-bold text-gray-200">Bugünkü Öğünler</h3>
+                    <button id="btn-open-food-modal" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-emerald-900/30">
+                        <i class="fa-solid fa-plus"></i> Öğün Ekle
+                    </button>
+                </div>
+
+                <div id="food-list" class="space-y-2.5">
+                    <!-- Yemek kartları JS ile dinamik eklenecek -->
+                    <div class="bg-gray-900/50 border border-gray-800/80 rounded-2xl p-4 text-center text-gray-500 text-sm">
+                        Henüz öğün eklenmedi.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SPOR GÜNLERİ / TAKVİM -->
+        <section id="tab-workout" class="space-y-6 hidden">
+
+            <!-- Devamlılık Seri Kartı (Streak) -->
+            <div class="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-800/50 rounded-3xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-blue-300 font-semibold uppercase tracking-wider">Antrenman Serisi</span>
+                    <div class="flex items-baseline gap-1 mt-1">
+                        <span id="streak-count" class="text-3xl font-extrabold text-white">0</span>
+                        <span class="text-sm text-gray-300 font-medium">Gün Üst Üste!</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-1">Disiplin harika, devam et!</p>
+                </div>
+                <div class="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center text-blue-400 text-2xl shadow-inner">
+                    <i class="fa-solid fa-fire text-amber-500"></i>
+                </div>
+            </div>
+
+            <!-- Takvim Başlığı ve Navigasyonu -->
+            <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 id="calendar-month-year" class="font-bold text-white text-base">Ay Yıl</h3>
+                    <div class="flex gap-1">
+                        <button id="btn-prev-month" class="w-8 h-8 rounded-lg bg-gray-800 text-gray-300 hover:text-white flex items-center justify-center active:scale-95 transition">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button id="btn-next-month" class="w-8 h-8 rounded-lg bg-gray-800 text-gray-300 hover:text-white flex items-center justify-center active:scale-95 transition">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gün İsimleri -->
+                <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 pb-2 border-b border-gray-800">
+                    <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+                </div>
+
+                <!-- Takvim Gün Matrisi -->
+                <div id="calendar-days" class="grid grid-cols-7 gap-1.5 text-center text-sm font-medium">
+                    <!-- JS ile render edilecek -->
+                </div>
+
+                <div class="flex items-center justify-center gap-6 pt-3 text-xs text-gray-400 border-t border-gray-800/80">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                        <span>Spor Yapıldı</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full border border-blue-500 inline-block"></span>
+                        <span>Bugün</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bugün Spor Durumu Butonu -->
+            <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl text-center space-y-3">
+                <h4 class="font-bold text-white text-sm">Bugün Spora Gittin mi?</h4>
+                <p class="text-xs text-gray-400">Takvimde bugünü işaretlemek veya kaldırmak için tıkla.</p>
+                <button id="btn-toggle-today-workout" class="w-full py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-98 shadow-lg flex items-center justify-center gap-2 bg-gray-800 text-gray-200 hover:bg-gray-700">
+                    <i class="fa-solid fa-dumbbell"></i> <span id="workout-btn-text">Evet, Bugün Spor Yaptım!</span>
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gray-900/90 backdrop-blur-lg border-t border-gray-800 px-6 py-2 flex justify-around z-20">
+        <button id="nav-nutrition" class="flex flex-col items-center gap-1 text-blue-500 font-medium text-xs transition-colors py-1">
+            <i class="fa-solid fa-utensils text-lg"></i>
+            <span>Beslenme</span>
+        </button>
+        <button id="nav-workout" class="flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 font-medium text-xs transition-colors py-1">
+            <i class="fa-solid fa-calendar-check text-lg"></i>
+            <span>Spor Günleri</span>
+        </button>
+    </nav>
+
+    <!-- MODAL 1: Yemek Ekle -->
+    <div id="modal-food" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-opacity">
+        <div class="bg-gray-900 border border-gray-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom duration-200">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg text-white">Yemek / Öğün Ekle</h3>
+                <button id="btn-close-food-modal" class="text-gray-400 hover:text-white text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="form-add-food" class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 mb-1 block">Yemek Adı</label>
+                    <input type="text" id="food-name" required placeholder="Örn: Tavuk Göğsü & Pilav" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 mb-1 block">Kalori (kcal)</label>
+                        <input type="number" id="food-cal" required min="0" placeholder="450" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 mb-1 block">Protein (g)</label>
+                        <input type="number" id="food-protein" required min="0" placeholder="40" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 mb-1 block">Karbonhidrat (g)</label>
+                        <input type="number" id="food-carb" required min="0" placeholder="50" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 mb-1 block">Yağ (g)</label>
+                        <input type="number" id="food-fat" required min="0" placeholder="10" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-900/40">
+                    Kaydet
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Hedef Ayarları -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-opacity">
+        <div class="bg-gray-900 border border-gray-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg text-white">Günlük Hedef Ayarları</h3>
+                <button id="btn-close-settings-modal" class="text-gray-400 hover:text-white text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="form-settings" class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 mb-1 block">Hedef Kalori (kcal)</label>
+                    <input type="number" id="target-cal" required min="500" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 mb-1 block">Hedef Protein (g)</label>
+                    <input type="number" id="target-protein" required min="0" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 mb-1 block">Hedef Karbonhidrat (g)</label>
+                    <input type="number" id="target-carb" required min="0" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 mb-1 block">Hedef Yağ (g)</label>
+                    <input type="number" id="target-fat" required min="0" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+
+                <button type="submit" class="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-blue-900/40">
+                    Ayarları Güncelle
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Uygulama Scripti -->
+    <script>
+        // Uygulama Durumu (State)
+        const DEFAULT_SETTINGS = {
+            calorieTarget: 2000,
+            proteinTarget: 140,
+            carbTarget: 220,
+            fatTarget: 65
+        };
+
+        let appData = {
+            settings: { ...DEFAULT_SETTINGS },
+            dailyLogs: {}, // Format: 'YYYY-MM-DD': { foods: [...], workoutDone: boolean }
+        };
+
+        // Tarih Yardımcıları
+        const getTodayKey = () => {
+            const today = new Date();
+            return formatDateKey(today);
+        };
+
+        const formatDateKey = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        let activeCalendarDate = new Date();
+
+        // LocalStorage İşlemleri
+        const loadData = () => {
+            const savedData = localStorage.getItem('fit_takip_data');
+            if (savedData) {
+                try {
+                    appData = JSON.parse(savedData);
+                    if (!appData.settings) appData.settings = { ...DEFAULT_SETTINGS };
+                    if (!appData.dailyLogs) appData.dailyLogs = {};
+                } catch (e) {
+                    console.error("Veri okuma hatası", e);
+                }
+            }
+            ensureTodayLogExists();
+        };
+
+        const saveData = () => {
+            localStorage.setItem('fit_takip_data', JSON.stringify(appData));
+            updateUI();
+        };
+
+        const ensureTodayLogExists = () => {
+            const today = getTodayKey();
+            if (!appData.dailyLogs[today]) {
+                appData.dailyLogs[today] = { foods: [], workoutDone: false };
+            }
+        };
+
+        // DOM Elementleri
+        const currentDateEl = document.getElementById('current-date');
+        const navNutrition = document.getElementById('nav-nutrition');
+        const navWorkout = document.getElementById('nav-workout');
+        const tabNutrition = document.getElementById('tab-nutrition');
+        const tabWorkout = document.getElementById('tab-workout');
+
+        // Modal Elementleri
+        const modalFood = document.getElementById('modal-food');
+        const modalSettings = document.getElementById('modal-settings');
+        const btnOpenFoodModal = document.getElementById('btn-open-food-modal');
+        const btnCloseFoodModal = document.getElementById('btn-close-food-modal');
+        const btnOpenSettings = document.getElementById('btn-open-settings');
+        const btnCloseSettingsModal = document.getElementById('btn-close-settings-modal');
+
+        // Formlar
+        const formAddFood = document.getElementById('form-add-food');
+        const formSettings = document.getElementById('form-settings');
+
+        // Sayfa Yükleme
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            initHeaderDate();
+            setupNavigation();
+            setupModals();
+            setupWorkoutToggle();
+            setupCalendarControls();
+            updateUI();
+        });
+
+        const initHeaderDate = () => {
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            currentDateEl.textContent = new Date().toLocaleDateString('tr-TR', options);
+        };
+
+        // Navigasyon Yönetimi
+        const setupNavigation = () => {
+            navNutrition.addEventListener('click', () => {
+                tabNutrition.classList.remove('hidden');
+                tabWorkout.classList.add('hidden');
+                navNutrition.className = "flex flex-col items-center gap-1 text-blue-500 font-medium text-xs py-1";
+                navWorkout.className = "flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 font-medium text-xs py-1";
+            });
+
+            navWorkout.addEventListener('click', () => {
+                tabWorkout.classList.remove('hidden');
+                tabNutrition.classList.add('hidden');
+                navWorkout.className = "flex flex-col items-center gap-1 text-blue-500 font-medium text-xs py-1";
+                navNutrition.className = "flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 font-medium text-xs py-1";
+                renderCalendar();
+            });
+        };
+
+        // Modal Yönetimi
+        const setupModals = () => {
+            btnOpenFoodModal.addEventListener('click', () => modalFood.classList.remove('hidden'));
+            btnCloseFoodModal.addEventListener('click', () => modalFood.classList.add('hidden'));
+
+            btnOpenSettings.addEventListener('click', () => {
+                document.getElementById('target-cal').value = appData.settings.calorieTarget;
+                document.getElementById('target-protein').value = appData.settings.proteinTarget;
+                document.getElementById('target-carb').value = appData.settings.carbTarget;
+                document.getElementById('target-fat').value = appData.settings.fatTarget;
+                modalSettings.classList.remove('hidden');
+            });
+            btnCloseSettingsModal.addEventListener('click', () => modalSettings.classList.add('hidden'));
+
+            // Yemek Ekleme
+            formAddFood.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const today = getTodayKey();
+                const newFood = {
+                    id: Date.now(),
+                    name: document.getElementById('food-name').value,
+                    calories: parseInt(document.getElementById('food-cal').value) || 0,
+                    protein: parseInt(document.getElementById('food-protein').value) || 0,
+                    carb: parseInt(document.getElementById('food-carb').value) || 0,
+                    fat: parseInt(document.getElementById('food-fat').value) || 0
+                };
+
+                appData.dailyLogs[today].foods.push(newFood);
+                saveData();
+                formAddFood.reset();
+                modalFood.classList.add('hidden');
+            });
+
+            // Ayarları Güncelleme
+            formSettings.addEventListener('submit', (e) => {
+                e.preventDefault();
+                appData.settings.calorieTarget = parseInt(document.getElementById('target-cal').value) || 2000;
+                appData.settings.proteinTarget = parseInt(document.getElementById('target-protein').value) || 140;
+                appData.settings.carbTarget = parseInt(document.getElementById('target-carb').value) || 220;
+                appData.settings.fatTarget = parseInt(document.getElementById('target-fat').value) || 65;
+
+                saveData();
+                modalSettings.classList.add('hidden');
+            });
+        };
+
+        // Yemek Silme
+        window.deleteFood = (id) => {
+            const today = getTodayKey();
+            appData.dailyLogs[today].foods = appData.dailyLogs[today].foods.filter(item => item.id !== id);
+            saveData();
+        };
+
+        // Spor Durumu İşaretleme
+        const setupWorkoutToggle = () => {
+            const btn = document.getElementById('btn-toggle-today-workout');
+            btn.addEventListener('click', () => {
+                const today = getTodayKey();
+                appData.dailyLogs[today].workoutDone = !appData.dailyLogs[today].workoutDone;
+                saveData();
+            });
+        };
+
+        // UI Güncelleme Fonksiyonu
+        const updateUI = () => {
+            const today = getTodayKey();
+            const todayLog = appData.dailyLogs[today] || { foods: [], workoutDone: false };
+            const settings = appData.settings;
+
+            // Makroları Hesapla
+            let totalCal = 0, totalProt = 0, totalCarb = 0, totalFat = 0;
+            todayLog.foods.forEach(f => {
+                totalCal += f.calories;
+                totalProt += f.protein;
+                totalCarb += f.carb;
+                totalFat += f.fat;
+            });
+
+            // Kalori Halka Grafiği
+            const calRemaining = settings.calorieTarget - totalCal;
+            document.getElementById('cal-remaining').textContent = Math.max(0, calRemaining);
+            document.getElementById('cal-consumed').textContent = `${totalCal} kcal`;
+            document.getElementById('cal-target').textContent = `${settings.calorieTarget} kcal`;
+
+            const circle = document.getElementById('calorie-progress-circle');
+            const circumference = 2 * Math.PI * 40; // r=40 -> ~251.2
+            const percent = Math.min(100, (totalCal / settings.calorieTarget) * 100);
+            const offset = circumference - (percent / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            // Kalori Durum Rozeti
+            const statusBadge = document.getElementById('cal-status');
+            if (totalCal > settings.calorieTarget + 100) {
+                statusBadge.textContent = "Hedef Aşıldı";
+                statusBadge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20";
+            } else {
+                statusBadge.textContent = "Hedefte";
+                statusBadge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+            }
+
+            // Makro Barları
+            document.getElementById('prot-current').textContent = totalProt;
+            document.getElementById('prot-target').textContent = `${settings.proteinTarget}g`;
+            document.getElementById('prot-bar').style.width = `${Math.min(100, (totalProt / settings.proteinTarget) * 100)}%`;
+
+            document.getElementById('carb-current').textContent = totalCarb;
+            document.getElementById('carb-target').textContent = `${settings.carbTarget}g`;
+            document.getElementById('carb-bar').style.width = `${Math.min(100, (totalCarb / settings.carbTarget) * 100)}%`;
+
+            document.getElementById('fat-current').textContent = totalFat;
+            document.getElementById('fat-target').textContent = `${settings.fatTarget}g`;
+            document.getElementById('fat-bar').style.width = `${Math.min(100, (totalFat / settings.fatTarget) * 100)}%`;
+
+            // Yemek Listesi Render
+            const foodListEl = document.getElementById('food-list');
+            if (todayLog.foods.length === 0) {
+                foodListEl.innerHTML = `<div class="bg-gray-900/50 border border-gray-800/80 rounded-2xl p-4 text-center text-gray-500 text-sm">Henüz öğün eklenmedi.</div>`;
+            } else {
+                foodListEl.innerHTML = todayLog.foods.map(f => `
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white text-sm">${f.name}</h4>
+                            <div class="flex items-center gap-2 text-xs text-gray-400">
+                                <span class="text-emerald-400 font-semibold">${f.calories} kcal</span>
+                                <span>•</span>
+                                <span>P: ${f.protein}g</span>
+                                <span>K: ${f.carb}g</span>
+                                <span>Y: ${f.fat}g</span>
+                            </div>
+                        </div>
+                        <button onclick="deleteFood(${f.id})" class="text-gray-500 hover:text-red-400 p-2 rounded-lg transition">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Spor Buton Durumu
+            const workoutBtn = document.getElementById('btn-toggle-today-workout');
+            const workoutBtnText = document.getElementById('workout-btn-text');
+            if (todayLog.workoutDone) {
+                workoutBtn.className = "w-full py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-98 shadow-lg flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-emerald-900/30";
+                workoutBtnText.textContent = "Bugün Spor Yapıldı ✓";
+            } else {
+                workoutBtn.className = "w-full py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-98 shadow-lg flex items-center justify-center gap-2 bg-gray-800 text-gray-200 hover:bg-gray-700";
+                workoutBtnText.textContent = "Evet, Bugün Spor Yaptım!";
+            }
+
+            calculateStreak();
+            renderCalendar();
+        };
+
+        // Devamlılık (Streak) Hesaplama
+        const calculateStreak = () => {
+            let streak = 0;
+            let checkDate = new Date();
+
+            // Eğer bugün spor yapılmadıysa dünü kontrol etmeye başla
+            const todayKey = formatDateKey(checkDate);
+            if (!appData.dailyLogs[todayKey] || !appData.dailyLogs[todayKey].workoutDone) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (true) {
+                const key = formatDateKey(checkDate);
+                if (appData.dailyLogs[key] && appData.dailyLogs[key].workoutDone) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+
+            document.getElementById('streak-count').textContent = streak;
+        };
+
+        // Takvim Kontrolleri ve Render
+        const setupCalendarControls = () => {
+            document.getElementById('btn-prev-month').addEventListener('click', () => {
+                activeCalendarDate.setMonth(activeCalendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+            document.getElementById('btn-next-month').addEventListener('click', () => {
+                activeCalendarDate.setMonth(activeCalendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+        };
+
+        const renderCalendar = () => {
+            const monthYearEl = document.getElementById('calendar-month-year');
+            const daysContainer = document.getElementById('calendar-days');
+            
+            const year = activeCalendarDate.getFullYear();
+            const month = activeCalendarDate.getMonth();
+
+            const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            monthYearEl.textContent = `${monthNames[month]} ${year}`;
+
+            daysContainer.innerHTML = '';
+
+            // Ayın ilk gününün haftanın hangi günü olduğunu bul (Pazartesi=0 olacak şekilde ayarla)
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const todayKey = getTodayKey();
+
+            // Boş günler
+            for (let i = 0; i < adjustedFirstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "h-9";
+                daysContainer.appendChild(emptyCell);
+            }
+
+            // Ayın günleri
+            for (let day = 1; day <= totalDays; day++) {
+                const dayDate = new Date(year, month, day);
+                const dateKey = formatDateKey(dayDate);
+                const isWorkout = appData.dailyLogs[dateKey] && appData.dailyLogs[dateKey].workoutDone;
+                const isToday = dateKey === todayKey;
+
+                const dayCell = document.createElement('div');
+                dayCell.className = `h-9 flex items-center justify-center rounded-xl font-medium text-xs cursor-pointer transition-all ${
+                    isWorkout 
+                        ? 'bg-emerald-500 text-white font-bold shadow-md shadow-emerald-900/40' 
+                        : 'bg-gray-950/60 text-gray-300 hover:bg-gray-800'
+                } ${isToday ? 'border-2 border-blue-500' : ''}`;
+
+                dayCell.textContent = day;
+
+                // Tıklayınca spor durumunu değiştirme
+                dayCell.addEventListener('click', () => {
+                    if (!appData.dailyLogs[dateKey]) {
+                        appData.dailyLogs[dateKey] = { foods: [], workoutDone: false };
+                    }
+                    appData.dailyLogs[dateKey].workoutDone = !appData.dailyLogs[dateKey].workoutDone;
+                    saveData();
+                });
+
+                daysContainer.appendChild(dayCell);
+            }
+        };
+    </script>
+</body>
+</html>
